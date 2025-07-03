@@ -1,0 +1,88 @@
+                          <!DOCTYPE html>
+                          <html>
+
+                          <head>
+                            <meta charset="utf-8" />
+                            <title>GLBアニメーション確認ツール</title>
+                            <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
+                            <script src="https://unpkg.com/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
+
+                            <style>
+                              #info {
+                                position: fixed;
+                                top: 10px;
+                                left: 10px;
+                                background: rgba(255, 255, 255, 0.85);
+                                padding: 10px 14px;
+                                border-radius: 6px;
+                                font-size: 14px;
+                                font-family: sans-serif;
+                                color: #333;
+                                z-index: 1000;
+                                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+                              }
+                            </style>
+                          </head>
+
+                          <body>
+                            <div id="info">🔄 アニメーション読み込み中...</div>
+
+                            <a-scene>
+                              <a-assets>
+                                <!-- 恐竜モデル（別モデルに差し替えてもOK） -->
+                                <a-asset-item id="dinoModel" src="./assets/stegosaurus.glb"></a-asset-item>
+                              </a-assets>
+
+                              <!-- モデルの表示位置を少し上に調整 -->
+                              <a-gltf-model id="dino" src="#dinoModel" position="0 1 -3" scale="0.1 0.1 0.1"></a-gltf-model>
+
+                              <a-camera><a-cursor></a-cursor></a-camera>
+                              <a-sky color="#CCE6FF"></a-sky>
+
+                              <!-- 地面も上にあげる -->
+                              <a-plane color="#77DD77" rotation="-90 0 0" width="30" height="30" position="0 0.5 0"></a-plane>
+                            </a-scene>
+
+                            <script>
+                              const model = document.querySelector('#dino');
+                              const infoBox = document.getElementById('info');
+
+                              model.addEventListener('model-loaded', () => {
+                                const animations = model.getObject3D('mesh').animations;
+
+                                if (!animations || animations.length === 0) {
+                                  infoBox.textContent = '⚠️ アニメーションが見つかりません';
+                                  console.warn('アニメーションが見つかりません');
+                                  return;
+                                }
+
+                                console.log('🎬 アニメーションクリップ一覧:');
+                                animations.forEach((clip, i) => {
+                                  console.log(`Clip ${i + 1}: ${clip.name}`);
+                                });
+
+                                let currentIndex = 0;
+
+                                const playNextAnimation = () => {
+                                  const clipName = animations[currentIndex].name;
+
+                                  // 一度 animation-mixer を削除してから再設定
+                                  model.removeAttribute('animation-mixer');
+
+                                  setTimeout(() => {
+                                    model.setAttribute('animation-mixer', `clip: ${clipName}; loop: once`);
+                                    infoBox.textContent = `▶️ 再生中: ${clipName}`;
+                                    console.log(`✅ 再生中: ${clipName}`);
+
+                                    currentIndex = (currentIndex + 1) % animations.length;
+                                    setTimeout(playNextAnimation, 2000); // ← ⏱ 2秒後に次へ
+                                  }, 100); // ← 必要な小さな遅延（更新を確実にするため）
+                                };
+
+                                // スタート
+                                playNextAnimation();
+                              });
+                            </script>
+                          </body>
+
+                          </html>
